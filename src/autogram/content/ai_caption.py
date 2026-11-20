@@ -34,7 +34,7 @@ def generate_caption(video_bytes: bytes, filename: str) -> str:
 
     uploaded = None
     temp_path = None
-    client = genai.Client(api_key=api_key)
+    client = None
     prompt = (
         "Watch and listen to this complete video. Understand what is actually "
         "shown and heard; do not guess from the filename. Write one engaging, "
@@ -45,6 +45,7 @@ def generate_caption(video_bytes: bytes, filename: str) -> str:
     )
 
     try:
+        client = genai.Client(api_key=api_key)
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp:
             temp.write(video_bytes)
             temp_path = temp.name
@@ -72,7 +73,7 @@ def generate_caption(video_bytes: bytes, filename: str) -> str:
     except Exception as exc:
         raise CaptionError(f"Gemini request failed: {exc}") from exc
     finally:
-        if uploaded is not None:
+        if uploaded is not None and client is not None:
             try:
                 client.files.delete(name=uploaded.name)
             except Exception:
