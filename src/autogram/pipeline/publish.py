@@ -19,12 +19,14 @@ The order here is deliberate and load-bearing:
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 
 import requests
 
 from autogram.content.post import Post, PostType
+from autogram.content.ai_caption import CaptionError, generate_caption
 from autogram.content.validate import ValidationResult, load_media, validate
 from autogram.instagram.errors import Disposition, InstagramError, MediaNotReady
 from autogram.pipeline.context import PUBLISHED_ROOT, STAGING_ROOT, Context
@@ -77,6 +79,20 @@ def publish_post(ctx: Context, post: Post) -> Outcome:
 
     if problems:
         return _fail(ctx, post, problems)
+
+    # Generate only for blank Reel captions. Hand-written captions stay intact.
+    # Without a Gemini key, existing Autogram behaviour is unchanged.
+    if (
+        post.resolved_type is PostType.REEL
+        and not post.caption.strip()
+        and os.getenv("GEMINI_API_KEY", "").strip()
+    ):
+        try:
+            video = next(item for item in items if item.kind.value == "video")
+            post.caption = generate_caption(video.upload_bytes, video.name)
+            log.info("Generated an Instagram caption for Reel %s with Gemini.", name)
+        except (CaptionError, StopIteration) as exc:
+            return _fail(ctx, post, [f"Gemini caption generation failed: {exc}"])
 
     staged: list[str] = []
     try:

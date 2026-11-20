@@ -15,6 +15,7 @@ dependencies = [
     "google-auth-oauthlib",     # one-time OAuth flow when minting a refresh token
     "pillow",                   # JPEG conversion (the one permitted transform)
     "pillow-heif",              # HEIC support — phones shoot HEIC
+    "google-genai",             # Gemini video analysis and automatic captions
 ]
 
 [project.optional-dependencies]
